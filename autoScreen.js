@@ -1,64 +1,68 @@
+export function ajustarCanvas(canvas) {
+  const ratio = 16 / 9;
+  let ancho = window.innerWidth;
+  let alto = window.innerHeight;
 
-función de exportación ajustarCanvas(canvas) {
-  relación constante = 16 / 9;
-  deje que ancho = ventana.anchointerno;
-  deje altura = ventana.alturaInterna;
-
-  si (ancho/alto > relación) {
-    ancho = alto * relación;
-  } demás {
-    altura = ancho / relación;
+  if (ancho / alto > ratio) {
+    ancho = alto * ratio;
+  } else {
+    alto = ancho / ratio;
   }
 
-  lienzo.ancho = ancho;
-  lienzo.altura = altura;
-  lienzo.estilo.ancho = ancho + "px";
-  lienzo.estilo.altura = altura + "px";
+  canvas.width = ancho;
+  canvas.height = alto;
+  canvas.style.width = ancho + "px";
+  canvas.style.height = alto + "px";
 }
 
-exportar función asíncrona iniciarPantallaCompleta(canvas, overlayId = 'pantallaInicio') {
-  const elem = documento.documentElement;
+export async function iniciarPantallaCompleta(canvas, overlayId = 'pantallaInicio') {
+  const elem = document.documentElement;
 
-  si (elem.requestFullscreen) esperar elem.requestFullscreen();
-  de lo contrario si (elem.webkitRequestFullscreen) esperar elem.webkitRequestFullscreen();
-  de lo contrario si (elem.msRequestFullscreen) esperar elem.msRequestFullscreen();
+  if (elem.requestFullscreen) await elem.requestFullscreen();
+  else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen();
+  else if (elem.msRequestFullscreen) await elem.msRequestFullscreen();
 
-  si (pantalla.orientación && pantalla.orientación.bloqueo) {
-    intentar {
-      esperar pantalla.orientación.lock("paisaje");
-    } captura (e) {
+  if (screen.orientation && screen.orientation.lock) {
+    try {
+      await screen.orientation.lock("landscape");
+    } catch (e) {
       console.warn("No se pudo bloquear la orientación:", e);
     }
   }
 
-  documento.getElementById(overlayId).style.display = 'ninguno';
-  ajustarCanvas(lienzo);
+  document.getElementById(overlayId).style.display = 'none';
+  ajustarCanvas(canvas);
 }
 
-función de exportación configurarPantalla(canvas, overlayId = 'pantallaInicio') {
-  constante superposición = document.getElementById(overlayId);
+export function configurarPantalla(canvas, onResize = () => {}, overlayId = 'pantallaInicio') {
+  const overlay = document.getElementById(overlayId);
 
-  función mostrarOverlay() {
-    superposición.estilo.display = 'flex';
+  function mostrarOverlay() {
+    overlay.style.display = 'flex';
   }
 
-  superposición.addEventListener('click', () => iniciarPantallaCompleta(canvas, overlayId));
-  ventana.addEventListener('resize', () => ajustarCanvas(canvas));
-  ventana.addEventListener('cambio de orientación', () => {
-    establecerTiempo de espera(() => {
-      ajustarCanvas(lienzo);
-      si (!documento.fullscreenElement) {
+  overlay.addEventListener('click', () => iniciarPantallaCompleta(canvas, overlayId));
+  window.addEventListener('resize', () => {
+    ajustarCanvas(canvas);
+    onResize();
+  });
+
+  window.addEventListener('orientationchange', () => {
+    setTimeout(() => {
+      ajustarCanvas(canvas);
+      onResize();
+      if (!document.fullscreenElement) {
         mostrarOverlay();
       }
     }, 300);
   });
 
-  document.addEventListener('cambio de pantalla completa', () => {
-    si (!documento.fullscreenElement) {
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
       mostrarOverlay();
     }
   });
 
-  ajustarCanvas(lienzo);
+  ajustarCanvas(canvas);
+  onResize();
 }
-
