@@ -1,85 +1,73 @@
-let modoDebug = true;
-let consola;
+export function ajustarCanvas(canvas) {
+  const ratio = 16 / 9;
+  let ancho = window.innerWidth;
+  let alto = window.innerHeight;
 
-export function mostrarDebug(activar = true) {
-  modoDebug = activar;
-  if (modoDebug && !document.getElementById('consolaPantalla')) {
-    consola = document.createElement('pre');
-    consola.id = 'consolaPantalla';
-    consola.style.position = 'fixed';
-    consola.style.bottom = '0';
-    consola.style.left = '0';
-    consola.style.color = 'lime';
-    consola.style.background = 'rgba(0,0,0,0.5)';
-    consola.style.fontSize = '1em';
-    consola.style.padding = '0.5em';
-    consola.style.margin = '0';
-    consola.style.zIndex = '9999';
-    consola.style.maxHeight = '50%';
-    consola.style.overflowY = 'auto';
-    document.body.appendChild(consola);
-
-    window.debugLog = function (texto) {
-      consola.textContent += texto + '\n';
-      consola.scrollTop = consola.scrollHeight;
-      console.log(texto);
-    };
+  if (ancho / alto > ratio) {
+    ancho = alto * ratio;
   } else {
-    window.debugLog = function () {};
+    alto = ancho / ratio;
   }
+
+  canvas.width = ancho;
+  canvas.height = alto;
+  canvas.style.width = ancho + "px";
+  canvas.style.height = alto + "px";
 }
 
-export function configurarPantalla(canvas) {
-  mostrarDebug(true);
-  if (!canvas) {
-    debugLog('Error: Canvas no encontrado.');
-    return;
-  }
+export async function iniciarPantallaCompleta(canvas, overlayId = 'pantallaInicio') {
+  const elem = document.documentElement;
 
-  function ajustarCanvas() {
-    const ancho = window.innerWidth;
-    const alto = window.innerHeight;
-    const proporcion = 16 / 9;
-    let nuevoAncho = ancho;
-    let nuevoAlto = ancho / proporcion;
+  if (elem.requestFullscreen) await elem.requestFullscreen();
+  else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen();
+  else if (elem.msRequestFullscreen) await elem.msRequestFullscreen();
 
-    if (nuevoAlto > alto) {
-      nuevoAlto = alto;
-      nuevoAncho = alto * proporcion;
-    }
-
-    canvas.width = 640;
-    canvas.height = 360;
-
-    canvas.style.width = `${nuevoAncho}px`;
-    canvas.style.height = `${nuevoAlto}px`;
-
-    debugLog(`Canvas ajustado: ${canvas.width}x${canvas.height}`);
-  }
-
-  function bloquearOrientacion() {
-    if (screen.orientation && screen.orientation.lock) {
-      screen.orientation.lock('landscape').then(() => {
-        debugLog('Orientación bloqueada a paisaje.');
-      }).catch(err => {
-        debugLog('No se pudo bloquear la orientación: ' + err);
-      });
-    } else {
-      debugLog('La orientación no se puede bloquear en este navegador.');
+  if (screen.orientation && screen.orientation.lock) {
+    try {
+      await screen.orientation.lock("landscape");
+    } catch (e) {
+      console.warn("No se pudo bloquear la orientación:", e);
     }
   }
 
-  window.addEventListener('resize', () => {
-    debugLog('Ventana redimensionada.');
-    ajustarCanvas();
-  });
+  document.getElementById(overlayId).style.display = 'none';
+  ajustarCanvas(canvas);
+}
 
+export function configurarPantalla(canvas, overlayId = 'pantallaInicio') {
+  const overlay = document.getElementById(overlayId);
+
+  function mostrarOverlay() {
+    overlay.style.display = 'flex';
+  }
+
+  overlay.addEventListener('click', () => iniciarPantallaCompleta(canvas, overlayId));
+  window.addEventListener('resize', () => ajustarCanvas(canvas));
   window.addEventListener('orientationchange', () => {
-    debugLog('Cambio de orientación.');
-    bloquearOrientacion();
-    setTimeout(ajustarCanvas, 500);
+    setTimeout(() => {
+      ajustarCanvas(canvas);
+      if (!document.fullscreenElement) {
+        mostrarOverlay();
+      }
+    }, 300);
   });
 
-  ajustarCanvas();
-  bloquearOrientacion();
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      mostrarOverlay();
+    }
+  });
+
+  ajustarCanvas(canvas);
+}
+
+export function mostrarDebug() {
+  const logDiv = document.getElementById("debugConsole");
+  if (!logDiv) return;
+
+  const log = console.log;
+  console.log = function (...args) {
+    logDiv.innerHTML += args.join(' ') + "<br>";
+    log.apply(console, args);
+  };
 }
