@@ -1,112 +1,85 @@
-function crearConsolaEnPantalla() {
-  const consola = document.createElement("div");
-  consola.id = "consolaPantalla";
-  consola.style.position = "fixed";
-  consola.style.bottom = "0";
-  consola.style.left = "0";
-  consola.style.width = "100%";
-  consola.style.maxHeight = "30%";
-  consola.style.overflowY = "auto";
-  consola.style.background = "rgba(0, 0, 0, 0.7)";
-  consola.style.color = "lime";
-  consola.style.fontSize = "12px";
-  consola.style.fontFamily = "monospace";
-  consola.style.zIndex = "9999";
-  consola.style.padding = "4px";
-  document.body.appendChild(consola);
-}
+let modoDebug = true;
+let consola;
 
-function logPantalla(mensaje) {
-  const consola = document.getElementById("consolaPantalla");
-  if (consola) {
-    const linea = document.createElement("div");
-    linea.textContent = mensaje;
-    consola.appendChild(linea);
-    consola.scrollTop = consola.scrollHeight;
-  }
-  console.log(mensaje); // También lo imprime en consola tradicional
-}
+export function mostrarDebug(activar = true) {
+  modoDebug = activar;
+  if (modoDebug && !document.getElementById('consolaPantalla')) {
+    consola = document.createElement('pre');
+    consola.id = 'consolaPantalla';
+    consola.style.position = 'fixed';
+    consola.style.bottom = '0';
+    consola.style.left = '0';
+    consola.style.color = 'lime';
+    consola.style.background = 'rgba(0,0,0,0.5)';
+    consola.style.fontSize = '1em';
+    consola.style.padding = '0.5em';
+    consola.style.margin = '0';
+    consola.style.zIndex = '9999';
+    consola.style.maxHeight = '50%';
+    consola.style.overflowY = 'auto';
+    document.body.appendChild(consola);
 
-export function ajustarCanvas(canvas) {
-  const relacion = 16 / 9;
-  let ancho = window.innerWidth;
-  let alto = window.innerHeight;
-
-  if (ancho / alto > relacion) {
-    ancho = alto * relacion;
+    window.debugLog = function (texto) {
+      consola.textContent += texto + '\n';
+      consola.scrollTop = consola.scrollHeight;
+      console.log(texto);
+    };
   } else {
-    alto = ancho / relacion;
+    window.debugLog = function () {};
   }
-
-  canvas.width = ancho;
-  canvas.height = alto;
-  canvas.style.width = ancho + "px";
-  canvas.style.height = alto + "px";
-
-  logPantalla(`Canvas ajustado: ${ancho}x${alto}`);
 }
 
-export async function iniciarPantallaCompleta(canvas, overlayId = 'pantallaInicio') {
-  const elem = document.documentElement;
-  logPantalla("Intentando pantalla completa...");
-
-  try {
-    if (elem.requestFullscreen) await elem.requestFullscreen();
-    else if (elem.webkitRequestFullscreen) await elem.webkitRequestFullscreen();
-    else if (elem.msRequestFullscreen) await elem.msRequestFullscreen();
-    logPantalla("Pantalla completa activada.");
-  } catch (e) {
-    logPantalla("Error al activar pantalla completa: " + e);
+export function configurarPantalla(canvas) {
+  mostrarDebug(true);
+  if (!canvas) {
+    debugLog('Error: Canvas no encontrado.');
+    return;
   }
 
-  if (screen.orientation && screen.orientation.lock) {
-    try {
-      await screen.orientation.lock("landscape");
-      logPantalla("Orientación bloqueada a paisaje.");
-    } catch (e) {
-      logPantalla("No se pudo bloquear la orientación: " + e);
+  function ajustarCanvas() {
+    const ancho = window.innerWidth;
+    const alto = window.innerHeight;
+    const proporcion = 16 / 9;
+    let nuevoAncho = ancho;
+    let nuevoAlto = ancho / proporcion;
+
+    if (nuevoAlto > alto) {
+      nuevoAlto = alto;
+      nuevoAncho = alto * proporcion;
+    }
+
+    canvas.width = 640;
+    canvas.height = 360;
+
+    canvas.style.width = `${nuevoAncho}px`;
+    canvas.style.height = `${nuevoAlto}px`;
+
+    debugLog(`Canvas ajustado: ${canvas.width}x${canvas.height}`);
+  }
+
+  function bloquearOrientacion() {
+    if (screen.orientation && screen.orientation.lock) {
+      screen.orientation.lock('landscape').then(() => {
+        debugLog('Orientación bloqueada a paisaje.');
+      }).catch(err => {
+        debugLog('No se pudo bloquear la orientación: ' + err);
+      });
+    } else {
+      debugLog('La orientación no se puede bloquear en este navegador.');
     }
   }
 
-  document.getElementById(overlayId).style.display = 'none';
-  ajustarCanvas(canvas);
-}
-
-export function configurarPantalla(canvas, overlayId = 'pantallaInicio') {
-  crearConsolaEnPantalla();
-  const overlay = document.getElementById(overlayId);
-
-  function mostrarOverlay() {
-    overlay.style.display = 'flex';
-    logPantalla("Mostrando overlay.");
-  }
-
-  overlay.addEventListener('click', () => {
-    logPantalla("Overlay clicado.");
-    iniciarPantallaCompleta(canvas, overlayId);
-  });
-
   window.addEventListener('resize', () => {
-    logPantalla("Ventana redimensionada.");
-    ajustarCanvas(canvas);
+    debugLog('Ventana redimensionada.');
+    ajustarCanvas();
   });
 
   window.addEventListener('orientationchange', () => {
-    logPantalla("Cambio de orientación.");
-    setTimeout(() => {
-      ajustarCanvas(canvas);
-      if (!document.fullscreenElement) {
-        mostrarOverlay();
-      }
-    }, 300);
+    debugLog('Cambio de orientación.');
+    bloquearOrientacion();
+    setTimeout(ajustarCanvas, 500);
   });
 
-  document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) {
-      logPantalla("Pantalla completa desactivada.");
-      mostrarOverlay();
-    }
-  });
-
-  ajustarCanvas(canvas);
+  ajustarCanvas();
+  bloquearOrientacion();
 }
