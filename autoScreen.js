@@ -1,72 +1,64 @@
-// autoScreen.js
 
-function crearElemento(tipo, id, estiloExtra = {}) {
-  const el = document.createElement(tipo);
-  el.id = id;
-  Object.assign(el.style, {
-    position: 'absolute',
-    zIndex: 10,
-    ...estiloExtra
-  });
-  document.body.appendChild(el);
-  return el;
-}
+función de exportación ajustarCanvas(canvas) {
+  relación constante = 16 / 9;
+  deje que ancho = ventana.anchointerno;
+  deje altura = ventana.alturaInterna;
 
-function ajustarCanvas(canvas) {
-  function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    posicionarElementos();
+  si (ancho/alto > relación) {
+    ancho = alto * relación;
+  } demás {
+    altura = ancho / relación;
   }
-  window.addEventListener('resize', resize);
-  resize();
+
+  lienzo.ancho = ancho;
+  lienzo.altura = altura;
+  lienzo.estilo.ancho = ancho + "px";
+  lienzo.estilo.altura = altura + "px";
 }
 
-let joystick, botonSalto, botonAccion;
+exportar función asíncrona iniciarPantallaCompleta(canvas, overlayId = 'pantallaInicio') {
+  const elem = documento.documentElement;
 
-function posicionarElementos() {
-  joystick.style.left = '60px';
-  joystick.style.top = `${window.innerHeight - 160}px`;
+  si (elem.requestFullscreen) esperar elem.requestFullscreen();
+  de lo contrario si (elem.webkitRequestFullscreen) esperar elem.webkitRequestFullscreen();
+  de lo contrario si (elem.msRequestFullscreen) esperar elem.msRequestFullscreen();
 
-  botonSalto.style.left = `${window.innerWidth - 140}px`;
-  botonSalto.style.top = `${window.innerHeight - 140}px`;
+  si (pantalla.orientación && pantalla.orientación.bloqueo) {
+    intentar {
+      esperar pantalla.orientación.lock("paisaje");
+    } captura (e) {
+      console.warn("No se pudo bloquear la orientación:", e);
+    }
+  }
 
-  botonAccion.style.left = `${window.innerWidth - 260}px`;
-  botonAccion.style.top = `${window.innerHeight - 160}px`;
+  documento.getElementById(overlayId).style.display = 'ninguno';
+  ajustarCanvas(lienzo);
 }
 
-// Inicialización automática
-window.addEventListener('load', () => {
-  // Fondo de la página
-  document.body.style.margin = '0';
-  document.body.style.overflow = 'hidden';
-  document.body.style.backgroundColor = '#A0E7E5'; // Turquesa pastel
+función de exportación configurarPantalla(canvas, overlayId = 'pantallaInicio') {
+  constante superposición = document.getElementById(overlayId);
 
-  // Canvas
-  const canvas = crearElemento('canvas', 'canvas', { background: 'transparent' });
-  ajustarCanvas(canvas);
+  función mostrarOverlay() {
+    superposición.estilo.display = 'flex';
+  }
 
-  // Joystick
-  joystick = crearElemento('div', 'joystick', {
-    width: '100px',
-    height: '100px',
-    background: 'rgba(255,255,255,0.2)',
-    borderRadius: '50%'
+  superposición.addEventListener('click', () => iniciarPantallaCompleta(canvas, overlayId));
+  ventana.addEventListener('resize', () => ajustarCanvas(canvas));
+  ventana.addEventListener('cambio de orientación', () => {
+    establecerTiempo de espera(() => {
+      ajustarCanvas(lienzo);
+      si (!documento.fullscreenElement) {
+        mostrarOverlay();
+      }
+    }, 300);
   });
 
-  // Botón de salto
-  botonSalto = crearElemento('div', 'botonSalto', {
-    width: '80px',
-    height: '80px',
-    background: 'rgba(0,255,0,0.5)',
-    borderRadius: '50%'
+  document.addEventListener('cambio de pantalla completa', () => {
+    si (!documento.fullscreenElement) {
+      mostrarOverlay();
+    }
   });
 
-  // Botón de acción
-  botonAccion = crearElemento('div', 'botonAccion', {
-    width: '80px',
-    height: '80px',
-    background: 'rgba(255,0,0,0.5)',
-    borderRadius: '50%'
-  });
-});
+  ajustarCanvas(lienzo);
+}
+
