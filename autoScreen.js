@@ -1,19 +1,38 @@
-export function ajustarCanvas(canvas) {
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+// Función para redimensionar el canvas
+function ajustarCanvas(canvas) {
   const ratio = 16 / 9;
-  let ancho = window.innerWidth;
-  let alto = window.innerHeight;
-
-  if (ancho / alto > ratio) {
-    ancho = alto * ratio;
+  let w = window.innerWidth;
+  let h = window.innerHeight;
+  if (w / h > ratio) {
+    w = h * ratio;
   } else {
-    alto = ancho / ratio;
+    h = w / ratio;
   }
-
-  canvas.width = ancho;
-  canvas.height = alto;
-  canvas.style.width = ancho + "px";
-  canvas.style.height = alto + "px";
+  canvas.width = w;
+  canvas.height = h;
 }
+
+// Función para dibujar el fondo
+function dibujarFondo(ctx, fondo) {
+  ctx.drawImage(fondo, 0, 0, canvas.width, canvas.height);
+}
+
+// >>> AQUÍ PEGAS ESTO <<<
+const imagenFondo = new Image();
+imagenFondo.src = 'fondo.jpg'; // Cambia por tu imagen real
+imagenFondo.onload = () => {
+  ajustarCanvas(canvas); // Asegúrate que el canvas esté bien
+  dibujarFondo(ctx, imagenFondo); // Dibuja fondo al cargar
+};
+
+// Evento para redibujar al rotar/redimensionar
+window.addEventListener('resize', () => {
+  ajustarCanvas(canvas);
+  dibujarFondo(ctx, imagenFondo);
+});
 
 export async function iniciarPantallaCompleta(canvas, overlayId = 'pantallaInicio') {
   const elem = document.documentElement;
@@ -71,3 +90,7 @@ export function mostrarDebug() {
     log.apply(console, args);
   };
 }
+window.addEventListener('resize', () => {
+  ajustarCanvas(canvas);
+  dibujarFondo(ctx, imagenFondo);
+});
