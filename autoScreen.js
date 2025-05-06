@@ -34,7 +34,7 @@ export async function iniciarPantallaCompleta(canvas, overlayId = 'pantallaInici
   ajustarCanvas(canvas);
 }
 
-export function configurarPantalla(canvas, onResize = () => {}, overlayId = 'pantallaInicio') {
+export function configurarPantalla(canvas, dibujarFondo = null, overlayId = 'pantallaInicio') {
   const overlay = document.getElementById(overlayId);
 
   function mostrarOverlay() {
@@ -42,27 +42,24 @@ export function configurarPantalla(canvas, onResize = () => {}, overlayId = 'pan
   }
 
   overlay.addEventListener('click', () => iniciarPantallaCompleta(canvas, overlayId));
+
   window.addEventListener('resize', () => {
     ajustarCanvas(canvas);
-    onResize();
+    if (dibujarFondo) dibujarFondo();
   });
 
   window.addEventListener('orientationchange', () => {
     setTimeout(() => {
       ajustarCanvas(canvas);
-      onResize();
-      if (!document.fullscreenElement) {
-        mostrarOverlay();
-      }
+      if (!document.fullscreenElement) mostrarOverlay();
+      if (dibujarFondo) dibujarFondo();
     }, 300);
   });
 
   document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) {
-      mostrarOverlay();
-    }
+    if (!document.fullscreenElement) mostrarOverlay();
   });
 
   ajustarCanvas(canvas);
-  onResize();
+  if (dibujarFondo) dibujarFondo();
 }
